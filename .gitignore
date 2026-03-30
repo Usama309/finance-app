@@ -5,3 +5,4 @@ data/
 .wwebjs_auth/
 .wwebjs_cache/
 .vercel
+.env*.local
