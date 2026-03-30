@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatPKR, computeAllocations, getEstimatedCompletion } from "@/lib/calculations";
 import { SAVINGS_TARGETS, MONTH_NAMES } from "@/lib/constants";
-import { toggleSavingsChecked, addExtraSaving, deleteExtraSaving, getTotalIncome } from "@/lib/store";
+import { toggleSavingsChecked, addExtraSaving, deleteExtraSaving, getTotalIncome, getFixedForMonth } from "@/lib/store";
 import ProgressBar from "./ProgressBar";
 
 export default function Savings({ state, setState, monthKey, monthData }) {
@@ -18,7 +18,8 @@ export default function Savings({ state, setState, monthKey, monthData }) {
 
   // Auto-computed from total income — same as planner
   const totalIncome = getTotalIncome(state, monthKey);
-  const alloc = computeAllocations(totalIncome, month, year);
+  const { items: fi, total: ft } = getFixedForMonth(state, month);
+  const alloc = computeAllocations(totalIncome, ft, fi);
 
   const car = state.savings.carFund;
   const emergency = state.savings.emergencyFund;

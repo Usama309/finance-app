@@ -4,16 +4,19 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { formatPKR, computeAllocations, getDailyBudget, getDaysInMonth, getTotalExpenses, getExpensesForDate } from "@/lib/calculations";
 import { MONTH_NAMES } from "@/lib/constants";
-import { toggleBillPaid, toggleSavingsChecked, addExtraIncome, deleteExtraIncome, getTotalIncome } from "@/lib/store";
+import { toggleBillPaid, toggleSavingsChecked, addExtraIncome, deleteExtraIncome, getTotalIncome, getFixedForMonth } from "@/lib/store";
+import { getDailyMotivation } from "@/lib/motivation";
+import { generateAllocationMessage } from "@/lib/whatsapp-message";
 import { requestPermission } from "@/lib/notifications";
 import { StaggerList, StaggerItem, CheckPop, ModalSheet } from "./AnimatedPage";
-import { Bell, BellRing, Plus, X, Calendar, Wallet, PiggyBank, Shield, Car, TrendingDown, TrendingUp, CircleCheck, CircleDashed, ChevronRight } from "lucide-react";
+import { Bell, BellRing, Plus, X, Calendar, Wallet, PiggyBank, Shield, Car, TrendingDown, TrendingUp, CircleCheck, CircleDashed, ChevronRight, Copy, Check, Sparkles } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 
 export default function Dashboard({ state, setState, monthKey, monthData, onNavigate }) {
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeAmt, setIncomeAmt] = useState("");
   const [incomeDesc, setIncomeDesc] = useState("");
+  const [copied, setCopied] = useState(false);
   const [notifGranted, setNotifGranted] = useState(false);
   const [notifDismissed, setNotifDismissed] = useState(false);
 
@@ -34,7 +37,8 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
 
   const totalIncome = getTotalIncome(state, monthKey);
   const extraIncomeTotal = totalIncome - state.salary;
-  const alloc = computeAllocations(totalIncome, month, year);
+  const { items: fixedItems, total: fixedTotal } = getFixedForMonth(state, month);
+  const alloc = computeAllocations(totalIncome, fixedTotal, fixedItems);
   const totalExpenses = getTotalExpenses(monthData.expenses);
   const todayExpenses = getExpensesForDate(monthData.expenses, todayStr);
   const spendingRemaining = Math.max(alloc.spending - totalExpenses, 0);
@@ -325,6 +329,45 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
             View Details <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
+      </StaggerItem>
+
+      {/* WhatsApp Copy Button */}
+      <StaggerItem>
+        <div className="card">
+          <h3 className="section-title mb-2 flex items-center gap-1.5"><Copy className="w-3.5 h-3.5" /> Share Budget Summary</h3>
+          <p className="text-xs text-slate-400 mb-3">Copy your {MONTH_NAMES[month]} budget breakdown and paste it in WhatsApp</p>
+          <button
+            onClick={() => {
+              const msg = generateAllocationMessage(totalIncome, alloc.fixedItems, alloc.fixedTotal, alloc, month, year);
+              navigator.clipboard.writeText(msg);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
+              copied ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700" : "bg-green-600 text-white active:bg-green-700"
+            }`}
+          >
+            {copied ? <><Check className="w-4 h-4" /> Copied! Paste in WhatsApp</> : <><Copy className="w-4 h-4" /> Copy Budget to WhatsApp</>}
+          </button>
+        </div>
+      </StaggerItem>
+
+      {/* Motivational Quote */}
+      <StaggerItem>
+        {(() => {
+          const motivation = getDailyMotivation();
+          return (
+            <div className="card bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-100 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 italic">&ldquo;{motivation.text}&rdquo;</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Daily motivation from CashGuard</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </StaggerItem>
     </StaggerList>
   );

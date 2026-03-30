@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { formatPKR, computeAllocations, getTotalExpenses, getExpensesForDate, getDailyBudget, getDaysInMonth } from "@/lib/calculations";
 import { CATEGORIES } from "@/lib/constants";
-import { addExpense, deleteExpense, getTotalIncome } from "@/lib/store";
+import { addExpense, deleteExpense, getTotalIncome, getFixedForMonth } from "@/lib/store";
 import { AnimatedFAB, ModalSheet, StaggerList, StaggerItem } from "./AnimatedPage";
 
 export default function ExpenseTracker({ state, setState, monthKey, monthData }) {
@@ -23,7 +23,8 @@ export default function ExpenseTracker({ state, setState, monthKey, monthData })
   const todayStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const totalIncome = getTotalIncome(state, monthKey);
-  const alloc = computeAllocations(totalIncome, month, year);
+  const { items: fi, total: ft } = getFixedForMonth(state, month);
+  const alloc = computeAllocations(totalIncome, ft, fi);
   const totalExpenses = getTotalExpenses(monthData.expenses);
   const todayExpenses = getExpensesForDate(monthData.expenses, todayStr);
   const spendingBudget = alloc.spending;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { loadState, currentMonthKey, getMonthData, saveState, getTotalIncome } from "@/lib/store";
+import { loadState, currentMonthKey, getMonthData, saveState, getTotalIncome, getFixedForMonth } from "@/lib/store";
 import { computeAllocations, getDailyBudget, getDaysInMonth, getTotalExpenses, getExpensesForDate } from "@/lib/calculations";
 import { MONTH_NAMES } from "@/lib/constants";
 import { registerSW, requestPermission, checkSalaryReminder, checkSpendingAlert } from "@/lib/notifications";
@@ -12,16 +12,14 @@ import ExpenseTracker from "./components/ExpenseTracker";
 import Savings from "./components/Savings";
 import Analytics from "./components/Analytics";
 import Settings from "./components/Settings";
+import ChatWidget from "./components/ChatWidget";
 
 export default function Home() {
   const [state, setStateRaw] = useState(null);
   const [tab, setTab] = useState("dashboard");
   const [ready, setReady] = useState(false);
 
-  function setState(s) {
-    setStateRaw(s);
-    saveState(s);
-  }
+  function setState(s) { setStateRaw(s); saveState(s); }
 
   useEffect(() => {
     const s = loadState();
@@ -29,10 +27,7 @@ export default function Home() {
     setReady(true);
     if (s.settings.darkMode) document.documentElement.classList.add("dark");
 
-    // Register service worker for PWA + offline
     registerSW();
-
-    // Request notification permission
     requestPermission();
 
     // Check reminders
@@ -42,9 +37,10 @@ export default function Home() {
     const month = now.getMonth() + 1;
     checkSalaryReminder(md, MONTH_NAMES[month]);
 
-    // Check daily spending
+    // Check spending
     const totalIncome = getTotalIncome(s, mk);
-    const alloc = computeAllocations(totalIncome, month, now.getFullYear());
+    const { total: ft } = getFixedForMonth(s, month);
+    const alloc = computeAllocations(totalIncome, ft, {});
     const totalExp = getTotalExpenses(md.expenses);
     const todayStr = now.toISOString().split("T")[0];
     const todaySpent = getExpensesForDate(md.expenses, todayStr);
@@ -82,6 +78,7 @@ export default function Home() {
         </PageTransition>
       </main>
       <Navigation activeTab={tab} onTabChange={setTab} />
+      <ChatWidget state={state} monthKey={mk} monthData={md} />
     </div>
   );
 }

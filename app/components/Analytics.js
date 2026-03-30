@@ -2,7 +2,7 @@
 
 import { formatPKR, computeAllocations, getSpendingByCategory, getDailyTotals, getDaysInMonth, getDailyBudget, getTotalExpenses } from "@/lib/calculations";
 import { CATEGORIES } from "@/lib/constants";
-import { getTotalIncome } from "@/lib/store";
+import { getTotalIncome, getFixedForMonth } from "@/lib/store";
 import BarChart from "./BarChart";
 import RingChart from "./RingChart";
 
@@ -16,7 +16,8 @@ export default function Analytics({ state, monthKey, monthData }) {
   const catSpend = getSpendingByCategory(monthData.expenses);
   const dailyTotals = getDailyTotals(monthData.expenses, Math.min(day, totalDays), year, month);
   const totalIncome = getTotalIncome(state, monthKey);
-  const alloc = computeAllocations(totalIncome, month, year);
+  const { items: fi, total: ft } = getFixedForMonth(state, month);
+  const alloc = computeAllocations(totalIncome, ft, fi);
   const total = getTotalExpenses(monthData.expenses);
   const budget = alloc.spending;
   const remaining = Math.max(budget - total, 0);
@@ -63,7 +64,8 @@ export default function Analytics({ state, monthKey, monthData }) {
     .slice(-6)
     .map(([k, d]) => {
       const [y, m] = k.split("-").map(Number);
-      const a = computeAllocations(state.salary, m, y);
+      const { total: ft2 } = getFixedForMonth(state, m);
+      const a = computeAllocations(state.salary, ft2, {});
       return { month: k, total: getTotalExpenses(d.expenses || []), budget: a.spending };
     });
 
