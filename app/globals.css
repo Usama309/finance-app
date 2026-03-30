@@ -2,84 +2,141 @@
 @tailwind components;
 @tailwind utilities;
 
-html { -webkit-tap-highlight-color: transparent; }
-
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  overscroll-behavior: none;
-}
-.dark body { @apply bg-slate-950 text-slate-100; }
-
-/* Tabular numbers for money displays */
-.mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
-
-/* Card — responsive padding */
-.card {
-  @apply bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100;
-}
-.dark .card { @apply bg-slate-900 border-slate-800; }
-
-/* Glass card variant */
-.glass {
-  @apply backdrop-blur-xl bg-white/70 rounded-2xl p-5 border border-white/20 shadow-lg;
-}
-.dark .glass { @apply bg-slate-900/70 border-slate-700/30; }
-
-/* Gradient cards */
-.gradient-blue   { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-.gradient-green  { background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); }
-.gradient-purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
-.gradient-red    { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-.gradient-amber  { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-.gradient-teal   { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
-
-/* Smooth bar transitions */
-.bar-fill { transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-.progress-fill { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-
-/* Bottom nav */
-.nav-item { @apply flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-[11px] font-medium transition-colors; }
-.nav-item.active { @apply text-blue-600 font-bold; }
-.dark .nav-item.active { @apply text-blue-400; }
-
-/* FAB — responsive position */
-.fab {
-  @apply fixed bottom-20 sm:bottom-24 right-4 sm:right-5 w-12 sm:w-14 h-12 sm:h-14 rounded-full shadow-xl flex items-center justify-center text-white text-xl sm:text-2xl z-40;
-  @apply active:scale-90 transition-transform;
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none;
+    line-height: 1.6;
+  }
+  .dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
 }
 
-/* Modal */
-.modal-backdrop {
-  @apply fixed inset-0 bg-black/60 z-50 flex items-end justify-center;
-  animation: fadeIn 0.15s ease;
-}
-.modal-sheet {
-  @apply bg-white rounded-t-3xl w-full max-w-lg p-6 pb-10 max-h-[90vh] overflow-y-auto;
-  animation: slideUp 0.25s ease;
-}
-.dark .modal-sheet { @apply bg-slate-900; }
+@layer components {
+  /* Tabular numbers */
+  .mono {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
 
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-@keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+  /* Card — responsive, accessible */
+  .card {
+    @apply bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 transition-colors;
+  }
+  .dark .card {
+    @apply bg-slate-900 border-slate-800;
+  }
+
+  /* Gradients */
+  .gradient-blue   { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+  .gradient-green  { background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); }
+  .gradient-purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
+
+  /* Animated fills */
+  .bar-fill   { transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+  .progress-fill { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  /* Bottom nav */
+  .nav-item {
+    @apply flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-[11px] font-medium transition-colors cursor-pointer;
+    min-height: 48px; /* touch target */
+  }
+  .nav-item.active { @apply text-blue-600 font-bold; }
+  .dark .nav-item.active { @apply text-blue-400; }
+
+  /* FAB — 48px min touch target */
+  .fab {
+    @apply fixed z-40 flex items-center justify-center text-white shadow-xl;
+    @apply w-14 h-14 rounded-full;
+    @apply bottom-[88px] right-4;
+    @apply sm:bottom-24 sm:right-5;
+  }
+
+  /* Buttons — accessible sizing */
+  .btn {
+    @apply inline-flex items-center justify-center font-semibold rounded-xl transition-colors cursor-pointer;
+    @apply text-sm px-4 py-3;
+    min-height: 44px; /* WCAG touch target */
+  }
+  .btn-primary {
+    @apply btn bg-blue-600 text-white active:bg-blue-700;
+  }
+  .btn-secondary {
+    @apply btn bg-slate-100 dark:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700;
+  }
+  .btn-success {
+    @apply btn bg-emerald-600 text-white active:bg-emerald-700;
+  }
+  .btn-danger {
+    @apply btn bg-red-500 text-white active:bg-red-600;
+  }
+
+  /* Form inputs — 16px prevents iOS zoom */
+  .input {
+    @apply w-full p-3 border-2 border-slate-200 dark:border-slate-700 rounded-xl;
+    @apply bg-slate-50 dark:bg-slate-800 transition-colors;
+    @apply focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20;
+    font-size: 16px; /* prevents iOS zoom */
+  }
+  .input-lg {
+    @apply input text-2xl sm:text-3xl font-bold mono;
+  }
+
+  /* Checkbox — accessible size */
+  .checkbox {
+    @apply w-5 h-5 rounded border-slate-300 cursor-pointer shrink-0;
+    min-width: 20px;
+    min-height: 20px;
+  }
+  .checkbox-green { @apply checkbox text-emerald-600 focus:ring-emerald-500; }
+  .checkbox-blue  { @apply checkbox text-blue-600 focus:ring-blue-500; }
+
+  /* Toggle */
+  .toggle-track {
+    @apply w-12 h-7 rounded-full transition-colors relative cursor-pointer;
+    min-width: 48px;
+    min-height: 28px;
+  }
+  .toggle-thumb {
+    @apply w-5 h-5 bg-white rounded-full absolute top-1 shadow-sm transition-transform;
+  }
+
+  /* Ring chart */
+  .ring-chart { transform: rotate(-90deg); }
+
+  /* Section header */
+  .section-title {
+    @apply text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider;
+  }
+
+  /* Money display */
+  .money-lg { @apply text-2xl sm:text-3xl font-bold mono; }
+  .money-md { @apply text-lg sm:text-xl font-bold mono; }
+  .money-sm { @apply text-sm font-semibold mono; }
+
+  /* Row item — consistent spacing */
+  .row-item {
+    @apply flex items-center gap-3 py-3 border-b border-slate-50 dark:border-slate-800 last:border-0;
+    min-height: 48px;
+  }
+
+  /* Scrollbar hide */
+  .no-scroll::-webkit-scrollbar { display: none; }
+  .no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .bar-fill, .progress-fill { transition: none; }
+  * { animation-duration: 0.01ms !important; }
+}
 
 /* Pulse */
 @keyframes pulse-soft { 0%,100% { opacity:1 } 50% { opacity:0.6 } }
 .pulse-soft { animation: pulse-soft 2s infinite; }
-
-/* Scrollbar hide */
-.no-scroll::-webkit-scrollbar { display: none; }
-.no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Ring chart */
-.ring-chart {
-  transform: rotate(-90deg);
-}
-
-/* Toggle */
-.toggle-track {
-  @apply w-12 h-6 rounded-full transition-colors relative cursor-pointer;
-}
-.toggle-thumb {
-  @apply w-5 h-5 bg-white rounded-full absolute top-0.5 shadow transition-transform;
-}
