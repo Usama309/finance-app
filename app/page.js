@@ -1,0 +1,87 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { loadState, currentMonthKey, getMonthData, saveState, getTotalIncome } from "@/lib/store";
+import { computeAllocations, getDailyBudget, getDaysInMonth, getTotalExpenses, getExpensesForDate } from "@/lib/calculations";
+import { MONTH_NAMES } from "@/lib/constants";
+import { registerSW, requestPermission, checkSalaryReminder, checkSpendingAlert } from "@/lib/notifications";
+import { PageTransition } from "./components/AnimatedPage";
+import Navigation from "./components/Navigation";
+import Dashboard from "./components/Dashboard";
+import ExpenseTracker from "./components/ExpenseTracker";
+import Savings from "./components/Savings";
+import Analytics from "./components/Analytics";
+import Settings from "./components/Settings";
+
+export default function Home() {
+  const [state, setStateRaw] = useState(null);
+  const [tab, setTab] = useState("dashboard");
+  const [ready, setReady] = useState(false);
+
+  function setState(s) {
+    setStateRaw(s);
+    saveState(s);
+  }
+
+  useEffect(() => {
+    const s = loadState();
+    setStateRaw(s);
+    setReady(true);
+    if (s.settings.darkMode) document.documentElement.classList.add("dark");
+
+    // Register service worker for PWA + offline
+    registerSW();
+
+    // Request notification permission
+    requestPermission();
+
+    // Check reminders
+    const mk = currentMonthKey();
+    const md = getMonthData(s, mk);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    checkSalaryReminder(md, MONTH_NAMES[month]);
+
+    // Check daily spending
+    const totalIncome = getTotalIncome(s, mk);
+    const alloc = computeAllocations(totalIncome, month, now.getFullYear());
+    const totalExp = getTotalExpenses(md.expenses);
+    const todayStr = now.toISOString().split("T")[0];
+    const todaySpent = getExpensesForDate(md.expenses, todayStr);
+    const remaining = Math.max(alloc.spending - totalExp, 0);
+    const totalDays = getDaysInMonth(month, now.getFullYear());
+    const dailyBudget = getDailyBudget(remaining, now.getDate(), totalDays);
+    checkSpendingAlert(todaySpent, dailyBudget);
+  }, []);
+
+  if (!ready || !state) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center">
+          <div className="text-4xl mb-3 animate-bounce">🛡️</div>
+          <h1 className="text-xl font-bold">CashGuard</h1>
+          <p className="text-sm text-slate-400 mt-1">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const mk = currentMonthKey();
+  const md = getMonthData(state, mk);
+  if (!state.months[mk]) { state.months[mk] = md; saveState(state); }
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
+      <main className="max-w-lg mx-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-20 sm:pb-24">
+        <PageTransition id={tab}>
+          {tab === "dashboard" && <Dashboard state={state} setState={setState} monthKey={mk} monthData={md} onNavigate={setTab} />}
+          {tab === "expenses"  && <ExpenseTracker state={state} setState={setState} monthKey={mk} monthData={md} />}
+          {tab === "savings"   && <Savings state={state} setState={setState} monthKey={mk} monthData={md} />}
+          {tab === "analytics" && <Analytics state={state} monthKey={mk} monthData={md} />}
+          {tab === "settings"  && <Settings state={state} setState={setState} monthKey={mk} monthData={md} />}
+        </PageTransition>
+      </main>
+      <Navigation activeTab={tab} onTabChange={setTab} />
+    </div>
+  );
+}

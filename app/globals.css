@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-tap-highlight-color: transparent; }
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overscroll-behavior: none;
+}
+.dark body { @apply bg-slate-950 text-slate-100; }
+
+/* Tabular numbers for money displays */
+.mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* Card — responsive padding */
+.card {
+  @apply bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100;
+}
+.dark .card { @apply bg-slate-900 border-slate-800; }
+
+/* Glass card variant */
+.glass {
+  @apply backdrop-blur-xl bg-white/70 rounded-2xl p-5 border border-white/20 shadow-lg;
+}
+.dark .glass { @apply bg-slate-900/70 border-slate-700/30; }
+
+/* Gradient cards */
+.gradient-blue   { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+.gradient-green  { background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); }
+.gradient-purple { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
+.gradient-red    { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+.gradient-amber  { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.gradient-teal   { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+
+/* Smooth bar transitions */
+.bar-fill { transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.progress-fill { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Bottom nav */
+.nav-item { @apply flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-[11px] font-medium transition-colors; }
+.nav-item.active { @apply text-blue-600 font-bold; }
+.dark .nav-item.active { @apply text-blue-400; }
+
+/* FAB — responsive position */
+.fab {
+  @apply fixed bottom-20 sm:bottom-24 right-4 sm:right-5 w-12 sm:w-14 h-12 sm:h-14 rounded-full shadow-xl flex items-center justify-center text-white text-xl sm:text-2xl z-40;
+  @apply active:scale-90 transition-transform;
+}
+
+/* Modal */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/60 z-50 flex items-end justify-center;
+  animation: fadeIn 0.15s ease;
+}
+.modal-sheet {
+  @apply bg-white rounded-t-3xl w-full max-w-lg p-6 pb-10 max-h-[90vh] overflow-y-auto;
+  animation: slideUp 0.25s ease;
+}
+.dark .modal-sheet { @apply bg-slate-900; }
+
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+
+/* Pulse */
+@keyframes pulse-soft { 0%,100% { opacity:1 } 50% { opacity:0.6 } }
+.pulse-soft { animation: pulse-soft 2s infinite; }
+
+/* Scrollbar hide */
+.no-scroll::-webkit-scrollbar { display: none; }
+.no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Ring chart */
+.ring-chart {
+  transform: rotate(-90deg);
+}
+
+/* Toggle */
+.toggle-track {
+  @apply w-12 h-6 rounded-full transition-colors relative cursor-pointer;
+}
+.toggle-thumb {
+  @apply w-5 h-5 bg-white rounded-full absolute top-0.5 shadow transition-transform;
+}
