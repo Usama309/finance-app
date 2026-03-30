@@ -2,3 +2,5 @@ node_modules
 .next
 .env
 data/
+.wwebjs_auth/
+.wwebjs_cache/
