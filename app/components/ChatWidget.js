@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MessageCircle, X, Send, Bot, User, Loader2 } from "lucide-react";
 import { formatPKR, computeAllocations, getTotalExpenses, getDailyBudget, getDaysInMonth } from "@/lib/calculations";
-import { getFixedForMonth, getTotalIncome } from "@/lib/store";
+import { getFixedForMonth, getTotalIncome } from "@/lib/sync-store";
 import { MONTH_NAMES, SAVINGS_TARGETS } from "@/lib/constants";
 
 export default function ChatWidget({ state, monthKey, monthData }) {

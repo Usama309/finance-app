@@ -6,3 +6,4 @@ data/
 .wwebjs_cache/
 .vercel
 .env*.local
+.DS_Store

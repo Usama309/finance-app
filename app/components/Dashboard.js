@@ -4,15 +4,17 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { formatPKR, computeAllocations, getDailyBudget, getDaysInMonth, getTotalExpenses, getExpensesForDate } from "@/lib/calculations";
 import { MONTH_NAMES } from "@/lib/constants";
-import { toggleBillPaid, toggleSavingsChecked, addExtraIncome, deleteExtraIncome, getTotalIncome, getFixedForMonth } from "@/lib/store";
+import { toggleBillPaid, toggleSavingsChecked, addExtraIncome, deleteExtraIncome, getTotalIncome, getFixedForMonth } from "@/lib/sync-store";
 import { getDailyMotivation } from "@/lib/motivation";
 import { generateAllocationMessage } from "@/lib/whatsapp-message";
 import { requestPermission } from "@/lib/notifications";
+import { usePrivacy } from "../context/PrivacyContext";
 import { StaggerList, StaggerItem, CheckPop, ModalSheet } from "./AnimatedPage";
-import { Bell, BellRing, Plus, X, Calendar, Wallet, PiggyBank, Shield, Car, TrendingDown, TrendingUp, CircleCheck, CircleDashed, ChevronRight, Copy, Check, Sparkles } from "lucide-react";
+import { Bell, BellRing, Plus, X, Calendar, Wallet, PiggyBank, Shield, Car, TrendingDown, TrendingUp, CircleCheck, CircleDashed, ChevronRight, Copy, Check, Sparkles, Eye, EyeOff, LogOut, User } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 
-export default function Dashboard({ state, setState, monthKey, monthData, onNavigate }) {
+export default function Dashboard({ state, setState, monthKey, monthData, onNavigate, profile, signOut }) {
+  const { hidden, toggle: togglePrivacy, maskAmount } = usePrivacy();
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeAmt, setIncomeAmt] = useState("");
   const [incomeDesc, setIncomeDesc] = useState("");
@@ -85,11 +87,19 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
               CashGuard
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-              {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              {profile ? `Hi, ${profile.display_name || profile.email?.split("@")[0]}` : now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => onNavigate("settings")} className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center cursor-pointer">
+            {/* Privacy Toggle */}
+            <button
+              onClick={togglePrivacy}
+              className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              title={hidden ? "Show amounts" : "Hide amounts"}
+            >
+              {hidden ? <EyeOff className="w-4 h-4 text-slate-500" /> : <Eye className="w-4 h-4 text-blue-500" />}
+            </button>
+            <button onClick={() => onNavigate("settings")} className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
               <Calendar className="w-4 h-4 text-slate-500" />
             </button>
           </div>
@@ -105,24 +115,19 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Enable Notifications</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300">Get salary reminders & overspending alerts</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">Get salary reminders & daily budget alerts</p>
             </div>
-            <button onClick={handleEnableNotifications} className="btn-primary !py-2 !px-3 !text-xs shrink-0">
-              Allow
-            </button>
-            <button onClick={dismissNotifBanner} className="text-slate-400 cursor-pointer shrink-0">
-              <X className="w-4 h-4" />
-            </button>
+            <button onClick={handleEnableNotifications} className="btn-primary !py-2 !px-3 !text-xs shrink-0">Allow</button>
+            <button onClick={dismissNotifBanner} className="text-slate-400 cursor-pointer shrink-0"><X className="w-4 h-4" /></button>
           </div>
         </StaggerItem>
       )}
 
-      {/* Already enabled */}
       {notifGranted && !notifDismissed && (
         <StaggerItem>
           <div className="card !p-3 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 flex items-center gap-3">
             <Bell className="w-5 h-5 text-emerald-600 shrink-0" />
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 flex-1">Notifications active — you&apos;ll get reminders</p>
+            <p className="text-sm text-emerald-700 dark:text-emerald-300 flex-1">Notifications active — daily budget alerts at 9 AM</p>
             <button onClick={dismissNotifBanner} className="text-slate-400 cursor-pointer"><X className="w-4 h-4" /></button>
           </div>
         </StaggerItem>
@@ -130,12 +135,12 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
 
       {/* Current Month Badge */}
       <StaggerItem>
-        <div className="bg-blue-600 text-white rounded-xl px-4 py-2.5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-lg shadow-blue-600/20">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 opacity-80" />
             <span className="text-sm font-bold">{MONTH_NAMES[month]} {year}</span>
           </div>
-          <span className="text-xs font-medium bg-white/20 px-2 py-0.5 rounded-full">Running Month</span>
+          <span className="text-xs font-medium bg-white/20 px-2.5 py-0.5 rounded-full">{daysLeft} days left</span>
         </div>
       </StaggerItem>
 
@@ -147,7 +152,7 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-600 dark:text-slate-400">Base Salary</span>
-            <span className="money-sm">{formatPKR(state.salary)}</span>
+            <span className="money-sm">{maskAmount(formatPKR(state.salary))}</span>
           </div>
           {monthData.extraIncome.map((e) => (
             <div key={e.id} className="row-item !py-2">
@@ -156,13 +161,13 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
                 <p className="text-sm text-emerald-600 truncate">{e.description || "Extra Income"}</p>
                 <p className="text-[10px] text-slate-400">{e.date}</p>
               </div>
-              <span className="money-sm text-emerald-600">{formatPKR(e.amount)}</span>
+              <span className="money-sm text-emerald-600">{maskAmount(formatPKR(e.amount))}</span>
               <button onClick={() => handleDeleteIncome(e.id)} className="text-slate-300 hover:text-red-500 cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
           ))}
           {extraIncomeTotal > 0 && (
             <div className="border-t border-slate-100 dark:border-slate-800 mt-2 pt-2 flex justify-between text-sm font-bold">
-              <span>Total</span><span className="mono">{formatPKR(totalIncome)}</span>
+              <span>Total</span><span className="mono">{maskAmount(formatPKR(totalIncome))}</span>
             </div>
           )}
           <button onClick={() => setShowAddIncome(true)} className="w-full mt-2 text-xs text-emerald-600 font-semibold text-center py-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/10 cursor-pointer flex items-center justify-center gap-1">
@@ -177,13 +182,11 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
         <div className="space-y-3">
           <div>
             <label className="section-title block mb-1.5">Amount (PKR)</label>
-            <input type="number" inputMode="numeric" value={incomeAmt} onChange={(e) => setIncomeAmt(e.target.value)}
-              placeholder="0" className="input-lg" autoFocus />
+            <input type="number" inputMode="numeric" value={incomeAmt} onChange={(e) => setIncomeAmt(e.target.value)} placeholder="0" className="input-lg" autoFocus />
           </div>
           <div>
             <label className="section-title block mb-1.5">Description</label>
-            <input type="text" value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)}
-              placeholder="e.g. Freelance project, Bonus..." className="input" />
+            <input type="text" value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} placeholder="e.g. Freelance project, Bonus..." className="input" />
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={() => setShowAddIncome(false)} className="btn-secondary flex-1">Cancel</button>
@@ -197,29 +200,29 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
         <div className="card">
           <h3 className="section-title mb-3 flex items-center gap-1.5"><TrendingDown className="w-3.5 h-3.5" /> {MONTH_NAMES[month]} Breakdown</h3>
           <div className="space-y-1.5 text-[13px] sm:text-sm">
-            <div className="flex justify-between"><span>Total Income</span><span className="font-bold mono">{formatPKR(totalIncome)}</span></div>
-            <div className="flex justify-between text-red-500"><span>Fixed Expenses</span><span className="font-bold mono">-{formatPKR(alloc.fixedTotal)}</span></div>
+            <div className="flex justify-between"><span>Total Income</span><span className="font-bold mono">{maskAmount(formatPKR(totalIncome))}</span></div>
+            <div className="flex justify-between text-red-500"><span>Fixed Expenses</span><span className="font-bold mono">-{maskAmount(formatPKR(alloc.fixedTotal))}</span></div>
             <div className="border-t border-slate-100 dark:border-slate-800 pt-1.5 flex justify-between font-semibold">
-              <span>Available</span><span className="mono">{formatPKR(alloc.available)}</span>
+              <span>Available</span><span className="mono">{maskAmount(formatPKR(alloc.available))}</span>
             </div>
-            <div className="flex justify-between text-blue-600"><span className="flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Spending (60%)</span><span className="font-bold mono">{formatPKR(alloc.spending)}</span></div>
-            <div className="flex justify-between text-purple-600"><span className="flex items-center gap-1"><Car className="w-3.5 h-3.5" /> Car Fund (25%)</span><span className="font-bold mono">{formatPKR(alloc.carFund)}</span></div>
-            <div className="flex justify-between text-emerald-600"><span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Emergency (15%)</span><span className="font-bold mono">{formatPKR(alloc.emergencyFund)}</span></div>
+            <div className="flex justify-between text-blue-600"><span className="flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Spending (60%)</span><span className="font-bold mono">{maskAmount(formatPKR(alloc.spending))}</span></div>
+            <div className="flex justify-between text-purple-600"><span className="flex items-center gap-1"><Car className="w-3.5 h-3.5" /> Car Fund (25%)</span><span className="font-bold mono">{maskAmount(formatPKR(alloc.carFund))}</span></div>
+            <div className="flex justify-between text-emerald-600"><span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Emergency (15%)</span><span className="font-bold mono">{maskAmount(formatPKR(alloc.emergencyFund))}</span></div>
           </div>
         </div>
       </StaggerItem>
 
-      {/* Today */}
+      {/* Today's Budget Cards */}
       <StaggerItem>
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          <div className="card">
-            <p className="section-title">Today&apos;s Limit</p>
-            <p className="money-lg mt-1">{formatPKR(dailyBudget)}</p>
-            <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> {daysLeft} days left</p>
+          <div className="card bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 border-blue-200/50 dark:border-blue-800/50">
+            <p className="section-title text-blue-600/70 dark:text-blue-400/70">Today&apos;s Limit</p>
+            <p className="money-lg mt-1 text-blue-700 dark:text-blue-300">{maskAmount(formatPKR(dailyBudget))}</p>
+            <p className="text-[11px] text-blue-500/60 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> {daysLeft} days left</p>
           </div>
-          <div className="card">
+          <div className={`card ${overToday ? "bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/10 border-red-200/50 dark:border-red-800/50" : "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/10 border-emerald-200/50 dark:border-emerald-800/50"}`}>
             <p className="section-title">Today&apos;s Spent</p>
-            <p className={`money-lg mt-1 ${overToday ? "text-red-500" : "text-emerald-600"}`}>{formatPKR(todayExpenses)}</p>
+            <p className={`money-lg mt-1 ${overToday ? "text-red-500" : "text-emerald-600"}`}>{maskAmount(formatPKR(todayExpenses))}</p>
             {overToday && <p className="text-[11px] text-red-400 mt-1 font-semibold flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Over limit!</p>}
             {!overToday && todayExpenses > 0 && <p className="text-[11px] text-emerald-500 mt-1">Within budget</p>}
           </div>
@@ -231,11 +234,11 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
         <div className="card">
           <div className="flex justify-between text-[13px] sm:text-sm mb-2">
             <span className="font-semibold flex items-center gap-1.5"><Wallet className="w-4 h-4 text-blue-500" /> Spending</span>
-            <span className="mono">{formatPKR(totalExpenses)} / {formatPKR(alloc.spending)}</span>
+            <span className="mono">{maskAmount(formatPKR(totalExpenses))} / {maskAmount(formatPKR(alloc.spending))}</span>
           </div>
           <ProgressBar current={totalExpenses} target={alloc.spending || 1} color={usedPct > 80 ? "red" : usedPct > 60 ? "yellow" : "blue"} height="h-2.5" showPct={false} />
           <div className="flex justify-between text-[11px] text-slate-400 mt-1.5">
-            <span>Left: {formatPKR(spendingRemaining)}</span>
+            <span>Left: {maskAmount(formatPKR(spendingRemaining))}</span>
             <span>{usedPct}% used</span>
           </div>
         </div>
@@ -255,7 +258,7 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
                 <label className="row-item cursor-pointer">
                   <input type="checkbox" checked={paid} onChange={() => handleToggleBill(key)} className="checkbox-green" />
                   <span className={`flex-1 text-[13px] sm:text-sm ${paid ? "line-through text-slate-400" : "font-medium"}`}>{item.label}</span>
-                  <span className={`text-[13px] sm:text-sm mono ${paid ? "text-slate-400 line-through" : "font-semibold"}`}>{formatPKR(item.amount)}</span>
+                  <span className={`text-[13px] sm:text-sm mono ${paid ? "text-slate-400 line-through" : "font-semibold"}`}>{maskAmount(formatPKR(item.amount))}</span>
                   {paid && <CircleCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
                   {!paid && <CircleDashed className="w-4 h-4 text-slate-300 shrink-0" />}
                 </label>
@@ -263,9 +266,9 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
             );
           })}
           <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between text-[13px] sm:text-sm font-bold">
-            <span>Total</span><span className="mono">{formatPKR(alloc.fixedTotal)}</span>
+            <span>Total</span><span className="mono">{maskAmount(formatPKR(alloc.fixedTotal))}</span>
           </div>
-          {paidCount === billKeys.length && (
+          {paidCount === billKeys.length && billKeys.length > 0 && (
             <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-[11px] text-emerald-500 font-semibold mt-2 text-center flex items-center justify-center gap-1">
               <CircleCheck className="w-3.5 h-3.5" /> All bills cleared!
             </motion.p>
@@ -283,7 +286,7 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
                 <input type="checkbox" checked={carChecked} onChange={() => handleToggleSaving("carFund", alloc.carFund)} className="checkbox-blue" />
                 <Car className="w-4 h-4 text-purple-500 shrink-0" />
                 <span className={`flex-1 text-[13px] sm:text-sm ${carChecked ? "line-through text-slate-400" : "font-medium"}`}>Car Fund (25%)</span>
-                <span className={`money-sm ${carChecked ? "text-emerald-500" : ""}`}>{formatPKR(alloc.carFund)}</span>
+                <span className={`money-sm ${carChecked ? "text-emerald-500" : ""}`}>{maskAmount(formatPKR(alloc.carFund))}</span>
                 {carChecked ? <CircleCheck className="w-4 h-4 text-emerald-500 shrink-0" /> : <CircleDashed className="w-4 h-4 text-slate-300 shrink-0" />}
               </label>
             </CheckPop>
@@ -294,13 +297,13 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
                 <input type="checkbox" checked={emChecked} onChange={() => handleToggleSaving("emergencyFund", alloc.emergencyFund)} className="checkbox-green" />
                 <Shield className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span className={`flex-1 text-[13px] sm:text-sm ${emChecked ? "line-through text-slate-400" : "font-medium"}`}>Emergency (15%)</span>
-                <span className={`money-sm ${emChecked ? "text-emerald-500" : ""}`}>{formatPKR(alloc.emergencyFund)}</span>
+                <span className={`money-sm ${emChecked ? "text-emerald-500" : ""}`}>{maskAmount(formatPKR(alloc.emergencyFund))}</span>
                 {emChecked ? <CircleCheck className="w-4 h-4 text-emerald-500 shrink-0" /> : <CircleDashed className="w-4 h-4 text-slate-300 shrink-0" />}
               </label>
             </CheckPop>
           )}
           <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between text-[13px] sm:text-sm font-bold">
-            <span>Total Savings</span><span className="mono">{formatPKR(alloc.carFund + alloc.emergencyFund)}</span>
+            <span>Total Savings</span><span className="mono">{maskAmount(formatPKR(alloc.carFund + alloc.emergencyFund))}</span>
           </div>
         </div>
       </StaggerItem>
@@ -313,14 +316,14 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
             <div>
               <div className="flex justify-between text-[13px] sm:text-sm mb-1">
                 <span className="flex items-center gap-1.5"><Car className="w-4 h-4 text-blue-500" /> Car Fund</span>
-                <span className="money-sm">{formatPKR(state.savings.carFund.total)} / Rs 200,000</span>
+                <span className="money-sm">{maskAmount(formatPKR(state.savings.carFund.total))} / {maskAmount("Rs 200,000")}</span>
               </div>
               <ProgressBar current={state.savings.carFund.total} target={200000} color="blue" height="h-2.5" showPct={false} />
             </div>
             <div>
               <div className="flex justify-between text-[13px] sm:text-sm mb-1">
                 <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-emerald-500" /> Emergency</span>
-                <span className="money-sm">{formatPKR(state.savings.emergencyFund.total)} / Rs 150,000</span>
+                <span className="money-sm">{maskAmount(formatPKR(state.savings.emergencyFund.total))} / {maskAmount("Rs 150,000")}</span>
               </div>
               <ProgressBar current={state.savings.emergencyFund.total} target={150000} color="emerald" height="h-2.5" showPct={false} />
             </div>
@@ -347,7 +350,7 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
               copied ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700" : "bg-green-600 text-white active:bg-green-700"
             }`}
           >
-            {copied ? <><Check className="w-4 h-4" /> Copied! Paste in WhatsApp</> : <><Copy className="w-4 h-4" /> Copy Budget to WhatsApp</>}
+            {copied ? <><Check className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Budget to WhatsApp</>}
           </button>
         </div>
       </StaggerItem>
@@ -368,6 +371,16 @@ export default function Dashboard({ state, setState, monthKey, monthData, onNavi
             </div>
           );
         })()}
+      </StaggerItem>
+
+      {/* Sync Status */}
+      <StaggerItem>
+        <div className="text-center py-2">
+          <p className="text-[10px] text-slate-300 dark:text-slate-600 flex items-center justify-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+            Synced across all devices
+          </p>
+        </div>
       </StaggerItem>
     </StaggerList>
   );

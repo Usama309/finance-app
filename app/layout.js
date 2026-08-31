@@ -1,4 +1,9 @@
 import "./globals.css";
+import { Inter } from "next/font/google";
+import { AuthProvider } from "./context/AuthContext";
+import { PrivacyProvider } from "./context/PrivacyContext";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata = {
   title: "CashGuard — Financial Discipline Coach",
@@ -16,16 +21,22 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#1e40af",
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        <AuthProvider>
+          <PrivacyProvider>
+            {children}
+          </PrivacyProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

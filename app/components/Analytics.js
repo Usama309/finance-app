@@ -2,11 +2,14 @@
 
 import { formatPKR, computeAllocations, getSpendingByCategory, getDailyTotals, getDaysInMonth, getDailyBudget, getTotalExpenses } from "@/lib/calculations";
 import { CATEGORIES } from "@/lib/constants";
-import { getTotalIncome, getFixedForMonth } from "@/lib/store";
+import { getTotalIncome, getFixedForMonth } from "@/lib/sync-store";
+import { usePrivacy } from "../context/PrivacyContext";
 import BarChart from "./BarChart";
 import RingChart from "./RingChart";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Analytics({ state, monthKey, monthData }) {
+  const { hidden, toggle: togglePrivacy, maskAmount } = usePrivacy();
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
@@ -25,7 +28,6 @@ export default function Analytics({ state, monthKey, monthData }) {
   const sorted = Object.entries(catSpend).sort((a, b) => b[1] - a[1]);
   const topCat = sorted[0];
 
-  // Overspend detection
   const overspendDays = [];
   let runRem = budget;
   for (const dt of dailyTotals) {
@@ -34,12 +36,10 @@ export default function Analytics({ state, monthKey, monthData }) {
     runRem -= dt.total;
   }
 
-  // First 10 vs rest
   const first10 = dailyTotals.filter((d) => d.day <= 10).reduce((s, d) => s + d.total, 0);
   const after10 = dailyTotals.filter((d) => d.day > 10).reduce((s, d) => s + d.total, 0);
   const frontLoaded = first10 > after10 && total > 0;
 
-  // Bar chart data
   const maxDaily = Math.max(...dailyTotals.map((d) => d.total), 1);
   const barData = dailyTotals.map((d) => ({
     value: d.total,
@@ -48,7 +48,6 @@ export default function Analytics({ state, monthKey, monthData }) {
     danger: overspendDays.includes(d.day),
   }));
 
-  // Weekly breakdown
   const weeks = [1, 2, 3, 4, 5].map((w) => {
     const s = (w - 1) * 7 + 1;
     const e = Math.min(w * 7, totalDays);
@@ -58,12 +57,11 @@ export default function Analytics({ state, monthKey, monthData }) {
 
   const maxWeekly = Math.max(...weeks.map((w) => w.total), 1);
 
-  // Monthly trend
   const trend = Object.entries(state.months)
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-6)
     .map(([k, d]) => {
-      const [y, m] = k.split("-").map(Number);
+      const [, m] = k.split("-").map(Number);
       const { total: ft2 } = getFixedForMonth(state, m);
       const a = computeAllocations(state.salary, ft2, {});
       return { month: k, total: getTotalExpenses(d.expenses || []), budget: a.spending };
@@ -71,9 +69,14 @@ export default function Analytics({ state, monthKey, monthData }) {
 
   return (
     <div className="space-y-4 pb-4">
-      <h2 className="text-xl font-bold px-1">Analytics</h2>
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-xl font-bold">Analytics</h2>
+        <button onClick={togglePrivacy} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center cursor-pointer">
+          {hidden ? <EyeOff className="w-4 h-4 text-slate-500" /> : <Eye className="w-4 h-4 text-blue-500" />}
+        </button>
+      </div>
 
-      {/* Budget Ring + Key Metrics */}
+      {/* Budget Ring */}
       {total > 0 && (
         <div className="card">
           <div className="flex items-center justify-around">
@@ -88,15 +91,15 @@ export default function Analytics({ state, monthKey, monthData }) {
             <div className="space-y-3">
               <div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Budget</p>
-                <p className="text-lg font-bold mono">{formatPKR(budget)}</p>
+                <p className="text-lg font-bold mono">{maskAmount(formatPKR(budget))}</p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Spent</p>
-                <p className="text-lg font-bold mono text-red-500">{formatPKR(total)}</p>
+                <p className="text-lg font-bold mono text-red-500">{maskAmount(formatPKR(total))}</p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Left</p>
-                <p className="text-lg font-bold mono text-emerald-600">{formatPKR(remaining)}</p>
+                <p className="text-lg font-bold mono text-emerald-600">{maskAmount(formatPKR(remaining))}</p>
               </div>
             </div>
           </div>
@@ -109,25 +112,25 @@ export default function Analytics({ state, monthKey, monthData }) {
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">Insights</h3>
           {topCat && (
             <div className="flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3">
-              <span className="text-xl">{catMap[topCat[0]]?.icon || "📌"}</span>
+              <span className="text-xl">{catMap[topCat[0]]?.icon || "&#128204;"}</span>
               <div>
                 <p className="text-sm font-semibold">Top category: {catMap[topCat[0]]?.label}</p>
-                <p className="text-xs text-slate-500">{formatPKR(topCat[1])} ({Math.round((topCat[1] / total) * 100)}% of total)</p>
+                <p className="text-xs text-slate-500">{maskAmount(formatPKR(topCat[1]))} ({Math.round((topCat[1] / total) * 100)}% of total)</p>
               </div>
             </div>
           )}
           {frontLoaded && (
             <div className="flex items-center gap-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
-              <span className="text-xl">⚡</span>
+              <span className="text-xl">&#9889;</span>
               <div>
                 <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Front-loaded spending</p>
-                <p className="text-xs text-slate-500">First 10 days: {formatPKR(first10)} vs rest: {formatPKR(after10)}</p>
+                <p className="text-xs text-slate-500">First 10 days: {maskAmount(formatPKR(first10))} vs rest: {maskAmount(formatPKR(after10))}</p>
               </div>
             </div>
           )}
           {overspendDays.length > 0 ? (
             <div className="flex items-center gap-2.5 bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
-              <span className="text-xl">🔴</span>
+              <span className="text-xl">&#128308;</span>
               <div>
                 <p className="text-sm font-semibold text-red-700 dark:text-red-300">{overspendDays.length} overspending day{overspendDays.length > 1 ? "s" : ""}</p>
                 <p className="text-xs text-slate-500">Days: {overspendDays.join(", ")}</p>
@@ -135,7 +138,7 @@ export default function Analytics({ state, monthKey, monthData }) {
             </div>
           ) : (
             <div className="flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3">
-              <span className="text-xl">✅</span>
+              <span className="text-xl">&#9989;</span>
               <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">No overspending days — great discipline!</p>
             </div>
           )}
@@ -159,7 +162,7 @@ export default function Analytics({ state, monthKey, monthData }) {
                       <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ backgroundColor: cat.color + "18" }}>{cat.icon}</span>
                       <span className="font-medium">{cat.label}</span>
                     </span>
-                    <span className="font-bold mono">{formatPKR(amt)} <span className="text-slate-400 font-normal text-xs">({pct}%)</span></span>
+                    <span className="font-bold mono">{maskAmount(formatPKR(amt))} <span className="text-slate-400 font-normal text-xs">({pct}%)</span></span>
                   </div>
                   <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5">
                     <div className="h-2.5 rounded-full progress-fill" style={{ width: `${pct}%`, backgroundColor: cat.color }} />
@@ -171,7 +174,7 @@ export default function Analytics({ state, monthKey, monthData }) {
         )}
       </div>
 
-      {/* Daily Spending Bar Chart */}
+      {/* Daily Spending */}
       {barData.length > 0 && (
         <div className="card">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">Daily Spending</h3>
@@ -195,7 +198,7 @@ export default function Analytics({ state, monthKey, monthData }) {
                 <div key={w.week}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-500 dark:text-slate-400">Week {w.week} <span className="text-xs">(Day {w.start}–{w.end})</span></span>
-                    <span className="font-bold mono">{formatPKR(w.total)}</span>
+                    <span className="font-bold mono">{maskAmount(formatPKR(w.total))}</span>
                   </div>
                   <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
                     <div className="bg-blue-500 h-2 rounded-full progress-fill" style={{ width: `${pct}%` }} />
@@ -223,7 +226,7 @@ export default function Analytics({ state, monthKey, monthData }) {
                     style={{ height: `${Math.max(h, 4)}%` }}
                   />
                   <p className="text-[9px] text-slate-400 mt-1.5">{m.month.split("-")[1]}/{m.month.split("-")[0].slice(2)}</p>
-                  <p className="text-[9px] font-semibold mono text-slate-500">{(m.total / 1000).toFixed(0)}k</p>
+                  <p className="text-[9px] font-semibold mono text-slate-500">{hidden ? "***" : `${(m.total / 1000).toFixed(0)}k`}</p>
                 </div>
               );
             })}

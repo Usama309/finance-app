@@ -13,7 +13,7 @@ const tabs = [
 
 export default function Navigation({ activeTab, onTabChange }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 z-50 shadow-lg shadow-slate-900/5">
       <div className="flex justify-around max-w-lg mx-auto pb-[env(safe-area-inset-bottom)]">
         {tabs.map((t) => {
           const active = activeTab === t.id;
@@ -24,10 +24,19 @@ export default function Navigation({ activeTab, onTabChange }) {
               className={`nav-item flex-1 relative ${active ? "active" : "text-slate-400 dark:text-slate-500"}`}
             >
               <motion.div
-                animate={active ? { scale: [1, 1.15, 1], y: -1 } : { scale: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
+                animate={active ? { scale: [1, 1.15, 1], y: -2 } : { scale: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="relative"
               >
                 <t.Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.8} />
+                {active && (
+                  <motion.div
+                    layoutId="nav-dot"
+                    className="absolute -bottom-1 left-1/2 w-1 h-1 bg-blue-600 dark:bg-blue-400 rounded-full"
+                    style={{ x: "-50%" }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
               </motion.div>
               <span className="mt-0.5">{t.label}</span>
               {active && (
